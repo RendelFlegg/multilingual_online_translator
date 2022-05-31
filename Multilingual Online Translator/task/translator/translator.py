@@ -31,7 +31,7 @@ def get_page(url):
     page = requests.get(url, headers=headers)
     while page.status_code != 200:
         page = requests.get(url, headers=headers)
-    print('200 OK')
+    print('200 OK\n')
     return page
 
 
@@ -49,17 +49,32 @@ def get_examples(page):
     return [span.text.lstrip() for span in spans]
 
 
+def print_translations(language, translations):
+    print(f'{language.capitalize()} Translations:')
+    for translation in translations:
+        print(translation)
+    print()
+
+
+def print_examples(language, examples):
+    examples_tuples = zip(*[iter(examples)]*2)
+    print(f'{language.capitalize()} Examples:')
+    for example in examples_tuples:
+        print(example[0])
+        print(example[1])
+        print()
+
+
 def translator():
     language_1, language_2 = get_language()
     word = get_word()
-    print_message(language_1, word)
+    print_message(language_2, word)
     url = get_url(language_1, language_2, word)
     page = get_page(url)
     translations = get_translations(page)
     examples = get_examples(page)
-    print('Translations')
-    print(translations)
-    print(examples)
+    print_translations(language_2, translations)
+    print_examples(language_2, examples)
 
 
 if __name__ == '__main__':
