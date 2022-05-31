@@ -3,15 +3,19 @@ from bs4 import BeautifulSoup
 
 
 def get_language():
-    languages = ['english', 'french']
-    message = 'Type "en" if you want to translate from French into English,' \
-              ' or "fr" if you want to translate from English into French:\n'
-    user_input = input(message)
-    while user_input not in ['en', 'fr']:
-        user_input = input(message)
-    if user_input == 'en':
-        languages = languages[::-1]
-    return tuple(languages)
+    languages = {'1': 'arabic', '2': 'german', '3': 'english', '4': 'spanish', '5': 'french', '6': 'hebrew',
+                 '7': 'japanese', '8': 'dutch', '9': 'polish', '10': 'portuguese', '11': 'romanian',
+                 '12': 'russian', '13': 'turkish'}
+    print('Hello, welcome to the translator. Translator supports: ')
+    for key, value in languages.items():
+        print(f'{key}. {value.capitalize()}')
+    number_1 = input('Type the number of your language: \n')
+    while number_1 not in languages:
+        number_1 = input('Type the number of your language: \n')
+    number_2 = input('Type the number of language you want to translate to: \n')
+    while number_2 not in languages:
+        number_2 = input('Type the number of language you want to translate to: \n')
+    return languages[number_1], languages[number_2]
 
 
 def get_word():
@@ -31,7 +35,6 @@ def get_page(url):
     page = requests.get(url, headers=headers)
     while page.status_code != 200:
         page = requests.get(url, headers=headers)
-    print('200 OK\n')
     return page
 
 
@@ -50,7 +53,7 @@ def get_examples(page):
 
 
 def print_translations(language, translations):
-    print(f'{language.capitalize()} Translations:')
+    print(f'\n{language.capitalize()} Translations:')
     for translation in translations:
         print(translation)
     print()
@@ -60,7 +63,7 @@ def print_examples(language, examples):
     examples_tuples = zip(*[iter(examples)]*2)
     print(f'{language.capitalize()} Examples:')
     for example in examples_tuples:
-        print(example[0])
+        print(f'{example[0]}:')
         print(example[1])
         print()
 
@@ -68,7 +71,6 @@ def print_examples(language, examples):
 def translator():
     language_1, language_2 = get_language()
     word = get_word()
-    print_message(language_2, word)
     url = get_url(language_1, language_2, word)
     page = get_page(url)
     translations = get_translations(page)

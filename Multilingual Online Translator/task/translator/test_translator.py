@@ -9,9 +9,9 @@ class TestTranslator(unittest.TestCase):  # a test case for the translator.py mo
     @mock.patch('translator.input', create=True)
     def test_get_language(self, mocked_input):
         # tests for the get_language() function
-        mocked_input.side_effect = ['br', 'en', 'fr']
-        self.assertEqual(translator.get_language(), ('english', 'french'))
+        mocked_input.side_effect = ['br', '5', '3', '3', '5']
         self.assertEqual(translator.get_language(), ('french', 'english'))
+        self.assertEqual(translator.get_language(), ('english', 'french'))
 
     @mock.patch('translator.input', create=True)
     def test_get_word(self, mocked_input):
