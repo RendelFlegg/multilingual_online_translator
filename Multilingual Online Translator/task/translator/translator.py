@@ -1,3 +1,4 @@
+import sys
 import requests as requests
 from bs4 import BeautifulSoup
 
@@ -23,6 +24,18 @@ def get_language():
     return languages[user_language], translated_languages
 
 
+def get_language_command(user_language, user_command):
+    languages = {'1': 'arabic', '2': 'german', '3': 'english', '4': 'spanish', '5': 'french', '6': 'hebrew',
+                 '7': 'japanese', '8': 'dutch', '9': 'polish', '10': 'portuguese', '11': 'romanian',
+                 '12': 'russian', '13': 'turkish'}
+    translated_languages = []
+    if user_command == 'all':
+        translated_languages = [languages[number] for number in languages if languages[number] != user_language]
+    else:
+        translated_languages.append(user_command)
+    return user_language, translated_languages
+
+
 def get_word():
     return input('Type the word you want to translate:\n')
 
@@ -44,6 +57,13 @@ def get_page(url):
 
 
 def get_translations(page):
+    soup = BeautifulSoup(page.content, 'html.parser')
+    translations = soup.find_all('a', {"class": 'translation'})
+    translation_list = [translation.get_text().strip() for translation in translations]
+    return translation_list
+
+
+def get_translations_alt(page):
     soup = BeautifulSoup(page.content, 'html.parser')
     content = soup.find(id='translations-content')
     spans = content.find_all('span', {'class': 'display-term'})
@@ -80,13 +100,13 @@ def print_dictionary(dictionary):
 
 
 def update_dictionary(dictionary, user_language, translated_languages, word):
-    multilanguage = len(translated_languages) > 1
+    multilingual = len(translated_languages) > 1
     for language in translated_languages:
         url = get_url(user_language, language, word)
         page = get_page(url)
         translations = get_translations(page)
         examples = get_examples(page)
-        if multilanguage:
+        if multilingual:
             translations = translations[:1]
             examples = examples[:2]
         dictionary[language] = {'translations': translations, 'examples': examples}
@@ -96,8 +116,7 @@ def write_translations(word, language, translations):
     with open(f'{word}.txt', 'a', encoding='utf-8') as f:
         f.write(f'{language.capitalize()} Translations:\n')
         for translation in translations:
-            f.write(f'{translation}\n')
-        f.write('\n')
+            f.write(f'{translation.lower()}\n')
 
 
 def write_examples(word, language, examples):
@@ -108,6 +127,7 @@ def write_examples(word, language, examples):
             f.write(f'{example[0]}:\n')
             f.write(f'{example[1]}\n')
             f.write('\n')
+        f.write('\n')
 
 
 def write_file(dictionary, word):
@@ -123,8 +143,11 @@ def read_file(word):
 
 def translator():
     dictionary = {}
-    user_language, translated_languages = get_language()
-    word = get_word()
+    args = sys.argv
+    user_language = args[1]
+    user_command = args[2]
+    user_language, translated_languages = get_language_command(user_language, user_command)
+    word = args[3]
     update_dictionary(dictionary, user_language, translated_languages, word)
     write_file(dictionary, word)
     read_file(word)
