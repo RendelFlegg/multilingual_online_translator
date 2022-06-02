@@ -3,37 +3,43 @@ import requests as requests
 from bs4 import BeautifulSoup
 
 
-def get_language():
-    languages = {'1': 'arabic', '2': 'german', '3': 'english', '4': 'spanish', '5': 'french', '6': 'hebrew',
-                 '7': 'japanese', '8': 'dutch', '9': 'polish', '10': 'portuguese', '11': 'romanian',
-                 '12': 'russian', '13': 'turkish'}
-    translated_languages = []
+class WrongLanguage(Exception):
+    def __init__(self, language):
+        super().__init__(f"Sorry, the program doesn't support {language}")
+
+
+class WrongWord(Exception):
+    def __init__(self, word):
+        super().__init__(f'Sorry, unable to find {word}')
+
+
+def get_user_language():
     print('Hello, welcome to the translator. Translator supports: ')
     for key, value in languages.items():
         print(f'{key}. {value.capitalize()}')
     user_language = input('Type the number of your language: \n')
-    while user_language not in languages:
-        user_language = input('Type the number of your language: \n')
-    user_number = input('Type the number of language you want to translate to: \n')
-    while user_number not in languages and user_number != '0':
-        user_number = input('Type the number of language you want to translate to: \n')
-    if user_number == '0':
-        translated_languages = [languages[number] for number in languages if number != user_language]
-    else:
-        translated_languages.append(languages[user_number])
-    return languages[user_language], translated_languages
+    return user_language
 
 
-def get_language_command(user_language, user_command):
-    languages = {'1': 'arabic', '2': 'german', '3': 'english', '4': 'spanish', '5': 'french', '6': 'hebrew',
-                 '7': 'japanese', '8': 'dutch', '9': 'polish', '10': 'portuguese', '11': 'romanian',
-                 '12': 'russian', '13': 'turkish'}
-    translated_languages = []
-    if user_command == 'all':
-        translated_languages = [languages[number] for number in languages if languages[number] != user_language]
+def get_user_command():
+    user_command = input('Type the number of language you want to translate to: \n')
+    while user_command not in [*languages, '0']:
+        user_command = input('Type the number of language you want to translate to: \n')
+    if user_command == '0':
+        user_command = 'all'
+    return user_command
+
+
+def get_languages(user_language, user_command):
+    if user_command not in [*languages.values(), 'all']:
+        raise WrongLanguage(user_command)
     else:
-        translated_languages.append(user_command)
-    return user_language, translated_languages
+        translated_languages = []
+        if user_command == 'all':
+            translated_languages = [languages[number] for number in languages if languages[number] != user_language]
+        else:
+            translated_languages.append(user_command)
+        return translated_languages
 
 
 def get_word():
@@ -51,12 +57,15 @@ def get_url(language_1, language_2, word):
 def get_page(url):
     headers = {'User-Agent': 'Mozilla/5.0'}
     page = requests.get(url, headers=headers)
-    while page.status_code != 200:
-        page = requests.get(url, headers=headers)
-    return page
+    if page.status_code == 200:
+        return page
+    elif page.status_code == 404:
+        word = url[url.rfind('//') + 1:]
+        raise WrongWord(word)
 
 
 def get_translations(page):
+    """Parsing translations with gender"""
     soup = BeautifulSoup(page.content, 'html.parser')
     translations = soup.find_all('a', {"class": 'translation'})
     translation_list = [translation.get_text().strip() for translation in translations]
@@ -64,6 +73,7 @@ def get_translations(page):
 
 
 def get_translations_alt(page):
+    """Parsing translations without gender"""
     soup = BeautifulSoup(page.content, 'html.parser')
     content = soup.find(id='translations-content')
     spans = content.find_all('span', {'class': 'display-term'})
@@ -144,13 +154,28 @@ def read_file(word):
 def translator():
     dictionary = {}
     args = sys.argv
-    user_language = args[1]
-    user_command = args[2]
-    user_language, translated_languages = get_language_command(user_language, user_command)
-    word = args[3]
-    update_dictionary(dictionary, user_language, translated_languages, word)
-    write_file(dictionary, word)
-    read_file(word)
+    if len(args) == 1:
+        user_language = get_user_language()
+        user_command = get_user_command()
+        word = get_word()
+    else:
+        user_language = args[1]
+        user_command = args[2]
+        word = args[3]
+    try:
+        translated_languages = get_languages(user_language, user_command)
+        update_dictionary(dictionary, user_language, translated_languages, word)
+        write_file(dictionary, word)
+        read_file(word)
+    except requests.exceptions.ConnectionError:
+        print('Something wrong with your internet connection')
+    except (WrongLanguage, WrongWord) as err:
+        print(err)
+
+
+languages = {'1': 'arabic', '2': 'german', '3': 'english', '4': 'spanish', '5': 'french', '6': 'hebrew',
+             '7': 'japanese', '8': 'dutch', '9': 'polish', '10': 'portuguese', '11': 'romanian',
+             '12': 'russian', '13': 'turkish'}
 
 
 if __name__ == '__main__':
